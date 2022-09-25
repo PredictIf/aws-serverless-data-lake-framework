@@ -1,0 +1,258 @@
+---
+# ###################################################################################################
+# IMPORTANT:  before anything, please edit ./environments/{{ deployment_env }}/vars-app.yaml
+#             and change variable specific to your environments
+#
+# ###################################################################################################
+#
+# Usage:
+#
+# ansible-playbook deploy.yaml -e "deployment_env=dev"
+# ansible-playbook deploy.yaml -e "deployment_env=prod"
+# ansible-playbook deploy.yaml -e "deployment_env=test"
+# ###################################################################################################
+
+- hosts: localhost
+  remote_user: root
+
+  vars:
+
+    - deployment_env: dev # must be overwritten with an inline variable. eg: ... -e "deployment_env=prod"
+
+  tasks:
+
+    - name: load common variables, same in all environments
+      include_vars: "./environments/vars_common.yaml"
+
+    - name: load variables specific to this environment
+      include_vars: "./environments/{{ deployment_env }}/vars-app.yaml"
+
+    # ################################################################################################################
+
+    - name: remove .git
+      ansible.builtin.shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-{{ item }}'
+        cmd: 'rm -rf .git'
+      loop:
+        - "datalakeLibrary"
+        - "dataset"
+        - "foundations"
+        - "pipeline"
+        - "pipLibrary"
+        - "stageA"
+        - "stageB"
+        - "team"
+        - "utils"
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-foundations-repo-installed'
+
+    # ################################################################################################################
+
+    - name: deploy foundations reposititories
+      shell:
+        chdir: '{{ playbook_dir }}/../'
+        cmd: './deploy.sh -e {{ deployment_env }} -f -o -c -s {{ aws_profile_devops }} -t {{ aws_profile }} -r {{ aws_region }}'
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-foundations-repo-installed'
+
+    - name: show deployment results
+      debug:
+        msg: "{{ shell_result }}"
+
+    - name: create file to indicate foundations repo is installed
+      file:
+        path: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-foundations-repo-installed'
+        state: touch
+      register: p
+      changed_when: p.diff.before.state == "absent"
+
+    # ################################################################################################################
+    # ################################################################################################################
+    # ################################################################################################################
+    # foundations
+
+    # TODO: edit parameters-{{ deployment_env }}.json
+    - name: process j2 templates for parameters json files
+      template:
+        src: "{{ playbook_dir }}/../{{ proj_prefix }}-foundations/parameters-{{ item }}.j2.json"
+        dest: "{{ playbook_dir }}/../{{ proj_prefix }}-foundations/parameters-{{ item }}.json"
+      loop: "{{ proj_environment_list }}"
+
+    - name: deploy foundations
+      shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-foundations'
+        cmd: './deploy.sh -p {{ aws_profile_devops }}'
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-foundations-installed'
+
+    - name: show deployment results
+      debug:
+        msg: "{{ shell_result }}"
+
+    - name: create file to indicate foundations is installed
+      file:
+        path: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-foundations-installed'
+        state: touch
+      register: p
+      changed_when: p.diff.before.state == "absent"
+
+    # ################################################################################################################
+    # ################################################################################################################
+    # ################################################################################################################
+    # team
+
+    # TODO: edit parameters-{{ deployment_env }}.json
+
+    - name: bootstrap team
+      shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-team/scripts'
+        cmd: |
+          ./bootstrap_team.sh
+          exit 0
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-team-installed'
+      environment:
+        ENV: '{{ deployment_env }}'
+
+    - name: bootstrap team results
+      debug:
+        msg: "{{ shell_result }}"
+
+    - name: team check
+      shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-team/scripts'
+        cmd: |
+          ./team_check.sh
+          exit 0
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-team-installed'
+      environment:
+        ENV: '{{ deployment_env }}'
+
+    - name: team check results
+      debug:
+        msg: "{{ shell_result }}"
+
+    - name: deploy default team
+      shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-team'
+        cmd: './deploy.sh -p {{ aws_profile }}'
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-team-installed'
+
+    - name: show deployment results
+      debug:
+        msg: "{{ shell_result }}"
+
+    - name: clone default team repositories
+      ansible.builtin.shell:
+        chdir: '{{ playbook_dir }}/../'
+        cmd: 'git clone codecommit://{{ item }}'
+      loop:
+        - "{{ proj_prefix }}-{{ default_team }}-datalakeLibrary"
+        - "{{ proj_prefix }}-{{ default_team }}-dataset"
+        - "{{ proj_prefix }}-{{ default_team }}-pipeline"
+        - "{{ proj_prefix }}-{{ default_team }}-pipLibrary"
+        - "{{ proj_prefix }}-{{ default_team }}-stageA"
+        - "{{ proj_prefix }}-{{ default_team }}-stageB"
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-team-installed'
+
+    - name: create file to indicate default team is installed
+      file:
+        path: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-team-installed'
+        state: touch
+      register: p
+      changed_when: p.diff.before.state == "absent"
+
+    # ################################################################################################################
+    # ################################################################################################################
+    # ################################################################################################################
+    # default team pipeline
+
+    - name: deploy default team pipeline
+      shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-{{ default_team }}-pipeline'
+        cmd: './deploy.sh -p {{ aws_profile }}'
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-pipeline-installed'
+
+    - name: show deployment results
+      debug:
+        msg: "{{ shell_result }}"
+
+    - name: create file to indicate default pipeline is installed
+      file:
+        path: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-pipeline-installed'
+        state: touch
+      register: p
+      changed_when: p.diff.before.state == "absent"
+
+    # ################################################################################################################
+    # ################################################################################################################
+    # ################################################################################################################
+    # default team dataset
+    - name: pause for 1 minute to wait for templates to finish
+      ansible.builtin.pause:
+        minutes: 1
+
+    - name: wait for stage A and B stacks to be created
+      shell:
+        cmd: |
+          aws cloudformation wait stack-create-complete --profile {{ aws_profile }} --stack-name {{ proj_prefix }}-{{ default_team }}-main-{{ proj_prefix }}-{{ default_team }}-stageB
+          aws cloudformation wait stack-create-complete --profile {{ aws_profile }} --stack-name {{ proj_prefix }}-{{ default_team }}-main-{{ proj_prefix }}-{{ default_team }}-stageA
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-dataset-installed'
+
+    - name: deploy default team dataset
+      shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-{{ default_team }}-dataset'
+        cmd: './deploy.sh -p {{ aws_profile }}'
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-dataset-installed'
+
+    - name: show deployment results
+      debug:
+        msg: "{{ shell_result }}"
+
+    - name: create file to indicate default dataset is installed
+      file:
+        path: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-dataset-installed'
+        state: touch
+      register: p
+      changed_when: p.diff.before.state == "absent"
+
+    # ################################################################################################################
+    # ################################################################################################################
+    # ################################################################################################################
+    # deploy the glue job for step B and transfer raw data
+
+    - name: deploy the glue job for step B and transfer raw data
+      shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-utils/pipeline-examples/legislators'
+        cmd: './deploy.sh -p {{ aws_profile }}'
+      register: shell_result
+      args:
+        creates: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-legislators-installed'
+
+    - name: show deployment results
+      debug:
+        msg: "{{ shell_result }}"
+
+    - name: create file to indicate glue job and data has been created
+      file:
+        path: '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-legislators-installed'
+        state: touch
+      register: p
+      changed_when: p.diff.before.state == "absent"
+

@@ -41,7 +41,7 @@ function bootstrap_repository_scm()
     else
       cp -f ${SCM_DIR}/bitbucket-pipelines.yml ./bitbucket-pipelines.yml
     fi
-    git add . 
+    git add .
     git commit -m "Initial Commit" > /dev/null
     BB_REPO=$(echo $REPOSITORY | awk '{print tolower($0)}' )
     echo "Creating repository ${PREFIX}-${REPOSITORY} on Bitbucket"

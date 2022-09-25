@@ -1,10 +1,13 @@
 #!/bin/bash
+
+# ENV=$(sed -e 's/^"//' -e 's/"$//' <<<"$(aws ssm get-parameter --name /SDLF/Misc/pEnv --query "Parameter.Value")")
+
 DIRNAME=$(pwd)
 TEAM_NAME=$(sed -e 's/^"//' -e 's/"$//' <<<"$(jq '.[] | select(.ParameterKey=="pTeamName") | .ParameterValue' ${DIRNAME}/../parameters-${ENV}.json)")
+
 function create_approbal_rule()
 {
   CA_OUT=$(aws codecommit create-approval-rule-template \
-      --region ${AWS_REGION} \
       --approval-rule-template-name ${TEAM_NAME}-approval-to-production \
       --approval-rule-template-content "{\"Version\": \"2018-11-08\",\"DestinationReferences\": [\"refs/heads/master\"],\"Statements\": [{\"Type\": \"Approvers\",\"NumberOfApprovalsNeeded\": 1}]}" 2>&1)
   CA_STATUS=$?
@@ -16,6 +19,7 @@ function create_approbal_rule()
       fi
   fi
 }
+
 function bootstrap_team_repository()
 {
   TEAM=${1}
@@ -32,11 +36,11 @@ function bootstrap_team_repository()
           exit ${STATUS}
       fi
   else
-      git clone --bare https://git-codecommit.${AWS_REGION}.amazonaws.com/v1/repos/${TEMPLATE_REPOSITORY}
+      git clone --bare codecommit://${TEMPLATE_REPOSITORY}
       cd ${TEMPLATE_REPOSITORY}.git/
-      git push --mirror https://git-codecommit.${AWS_REGION}.amazonaws.com/v1/repos/${TEAM_REPOSITORY}
+      git push --mirror codecommit://${TEAM_REPOSITORY}
       cd ../ && rm -rf ${TEMPLATE_REPOSITORY}.git
-      aws codecommit associate-approval-rule-template-with-repository --region ${AWS_REGION} --repository-name ${TEAM_REPOSITORY} --approval-rule-template-name ${TEAM_NAME}-approval-to-production
+      aws codecommit associate-approval-rule-template-with-repository --repository-name ${TEAM_REPOSITORY} --approval-rule-template-name ${TEAM_NAME}-approval-to-production
   fi
 }
 

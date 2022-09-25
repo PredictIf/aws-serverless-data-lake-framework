@@ -20,9 +20,9 @@ Pipeline
 ********
 A SDLF pipeline is a logical construct representing an ETL process. A team can implement one or more pipelines depending on their needs.
 
-Each pipeline is divided into stages (i.e. StageA, StageB...), which map to AWS Step Functions. Each Step Function orchestrates the process of transforming and moving data to different areas within the data lake (e.g. from RAW to STAGING area). There are two main advantages to using Step Functions as an orchestration layer. They are 1) serverless and 2) connected to the entire AWS universe, simplifying integration with other services on the platform. As many stages as necessary can be defined and modified for a pipeline. 
+Each pipeline is divided into stages (i.e. StageA, StageB...), which map to AWS Step Functions. Each Step Function orchestrates the process of transforming and moving data to different areas within the data lake (e.g. from RAW to STAGING area). There are two main advantages to using Step Functions as an orchestration layer. They are 1) serverless and 2) connected to the entire AWS universe, simplifying integration with other services on the platform. As many stages as necessary can be defined and modified for a pipeline.
 
-Each Step Function is comprised of one or more steps relating to operations in the orchestration process (e.g. Starting an Analytical Job, Running a crawler...). 
+Each Step Function is comprised of one or more steps relating to operations in the orchestration process (e.g. Starting an Analytical Job, Running a crawler...).
 
 .. image:: _static/sdlf-pipeline.png
     :alt: SDLF Pipeline

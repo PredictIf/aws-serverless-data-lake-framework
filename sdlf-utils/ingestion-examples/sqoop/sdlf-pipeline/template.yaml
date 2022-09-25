@@ -85,8 +85,7 @@ Parameters:
 
 Conditions:
   NotSubnet: !Equals [!Ref pEMRsubnet, "None"]
-  DeploySqoop:
-    !Not [Condition: NotSubnet]
+  DeploySqoop: !Not [Condition: NotSubnet]
 
 Resources:
   ######## STATE MACHINES #########

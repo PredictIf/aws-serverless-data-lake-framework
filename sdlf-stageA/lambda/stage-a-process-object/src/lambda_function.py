@@ -49,16 +49,18 @@ def lambda_handler(event, context):
 
         # Call custom transform created by user and process the file
         logger.info('Calling user custom processing code')
+        
         transform_handler = TransformHandler().stage_transform(team, dataset, stage)
+
         response = transform_handler().transform_object(
             bucket, key, team, dataset)  # custom user code called
         remove_content_tmp()
         octagon_client.update_pipeline_execution(status="{} {} Processing".format(stage, component),
-                                                 component=component)
+                component=component)
     except Exception as e:
         logger.error("Fatal error", exc_info=True)
         octagon_client.end_pipeline_execution_failed(component=component,
-                                                     issue_comment="{} {} Error: {}".format(stage, component, repr(e)))
+                issue_comment="{} {} Error: {}".format(stage, component, repr(e)))
         remove_content_tmp()
         raise e
     return response

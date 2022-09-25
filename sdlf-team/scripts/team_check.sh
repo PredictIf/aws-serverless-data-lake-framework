@@ -42,4 +42,4 @@ function with_backoff {
   return $exitCode
 }
 
-with_backoff aws iam get-role --role-name sdlf-cicd-team-codecommit-${ENV}-${TEAM_NAME} --profile crossaccount
+with_backoff aws iam get-role --role-name sdlf-cicd-team-codecommit-${ENV}-${TEAM_NAME} # --profile crossaccount

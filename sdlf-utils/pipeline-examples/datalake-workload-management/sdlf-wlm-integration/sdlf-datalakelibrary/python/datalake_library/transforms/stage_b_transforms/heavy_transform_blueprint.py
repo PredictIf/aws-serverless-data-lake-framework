@@ -96,6 +96,7 @@ class CustomTransform():
             JobName=job_details['jobName'], RunId=job_details['jobRunId'])
         json_data = json.loads(json.dumps(
             job_response, default=datetimeconverter))
+
         # IMPORTANT update the status of the job based on the job_response (e.g RUNNING, SUCCEEDED, FAILED)
         job_details['jobStatus'] = json_data.get('JobRun').get('JobRunState')
 

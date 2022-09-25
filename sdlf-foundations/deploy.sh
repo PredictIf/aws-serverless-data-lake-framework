@@ -34,6 +34,9 @@ if ! $sflag
 then
     S3_BUCKET=$(sed -e 's/^"//' -e 's/"$//' <<<"$(aws ssm get-parameter --name /SDLF/S3/CFNBucket --profile $PROFILE --query "Parameter.Value")")
 fi
+
+
+# TODO: take care of sdlf
 if ! $nflag
 then
     STACK_NAME="sdlf-foundations"
@@ -54,7 +57,7 @@ if ! aws s3 ls $S3_BUCKET --profile $PROFILE; then
 fi
 
 mkdir $DIRNAME/output
-sam package --profile $PROFILE --template-file $DIRNAME/template.yaml --s3-bucket $S3_BUCKET --s3-prefix foundations --output-template-file $DIRNAME/output/packaged-template.yaml
+sam package --profile $PROFILE --template-file $DIRNAME/template-cft.yaml --s3-bucket $S3_BUCKET --s3-prefix foundations --output-template-file $DIRNAME/output/packaged-template.yaml
 
 echo "Checking if stack exists ..."
 if ! aws cloudformation describe-stacks --profile $PROFILE --stack-name $STACK_NAME; then
@@ -65,6 +68,7 @@ if ! aws cloudformation describe-stacks --profile $PROFILE --stack-name $STACK_N
     --template-body file://$DIRNAME/output/packaged-template.yaml \
     --tags file://$DIRNAME/tags.json \
     --capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+    --disable-rollback \
     --profile $PROFILE
 
   echo "Waiting for stack to be created ..."
@@ -98,7 +102,7 @@ else
 
   echo "Waiting for stack update to complete ..."
   aws cloudformation wait stack-update-complete --profile $PROFILE \
-    --stack-name $STACK_NAME 
+    --stack-name $STACK_NAME
   echo "Finished create/update successfully!"
 fi
 

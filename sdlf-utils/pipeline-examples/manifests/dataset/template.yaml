@@ -55,7 +55,7 @@ Parameters:
     Description: The extension for the manifest file e.g csv, txt etc.
     Type: String
     AllowedPattern: "[a-zA-Z0-9]*"
-  pRegexPattern :
+  pRegexPattern:
     Description: The regex pattern to match the manifest file
     Type: String
   pManifestFileTimeout:

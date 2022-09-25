@@ -105,7 +105,6 @@ Parameters:
   pEMRsubnet:
     Type: String
 
-
 Conditions:
   DeployElasticSearch: !Equals [!Ref pElasticSearchEnabled, "true"]
   EnableTracing: !Equals [!Ref pEnableTracing, "true"]
@@ -726,7 +725,7 @@ Resources:
     Properties:
       Name: !Sub /SDLF/SQS/${pTeamName}/${pPipeline}StageBQueue
       Type: String
-      Value: !Select [ "5", !Split [":", !GetAtt rQueueRoutingStep.Arn]]
+      Value: !Select ["5", !Split [":", !GetAtt rQueueRoutingStep.Arn]]
       Description: !Sub "Name of the StageB ${pTeamName} ${pPipeline} Queue"
 
   rDeadLetterQueueRoutingStepSsm:
@@ -734,5 +733,6 @@ Resources:
     Properties:
       Name: !Sub "/SDLF/SQS/${pTeamName}/${pPipeline}StageBDLQ"
       Type: "String"
-      Value: !Select [ "5", !Split [":", !GetAtt rDeadLetterQueueRoutingStep.Arn]]
+      Value:
+        !Select ["5", !Split [":", !GetAtt rDeadLetterQueueRoutingStep.Arn]]
       Description: !Sub "Name of the StageB ${pTeamName} ${pPipeline} DLQ"

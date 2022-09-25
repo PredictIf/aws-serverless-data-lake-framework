@@ -1,3 +1,4 @@
+import boto3
 from datalake_library.commons import init_logger
 from datalake_library.configuration.resource_configs import DynamoConfiguration, SQSConfiguration, KMSConfiguration
 from datalake_library.interfaces.dynamo_interface import DynamoInterface
@@ -8,7 +9,6 @@ from datalake_library.octagon import Artifact, EventReasonEnum, peh
 
 logger = init_logger(__name__)
 
-import boto3
 
 def lambda_handler(event, context):
     """Updates the S3 objects metadata catalog
@@ -29,24 +29,26 @@ def lambda_handler(event, context):
         pipeline = event['body']['pipeline']
         stage = event['body']['pipeline_stage']
         dataset = event['body']['dataset']
-        
-        
-        # Lastly, Lets Run Comprehend Multi-Label Classification Job 
+
+        # Lastly, Lets Run Comprehend Multi-Label Classification Job
         # with the Training Data we created earlier:
-        
+
         # Connect to Comprehend Client
         comprehend_client = boto3.client('comprehend')
-        
+
         # Set Parameters for Classifier Training Job and get KMS Key for Encryption
-        input_key = "post-stage/{}/{}/multilabel_classification/training_data.csv".format(team, dataset)
+        input_key = "post-stage/{}/{}/multilabel_classification/training_data.csv".format(
+            team, dataset)
         s3_input = "s3://{}/{}".format(bucket, input_key)
-        output_key = "post-stage/{}/{}/multilabel_classification/".format(team, dataset)
+        output_key = "post-stage/{}/{}/multilabel_classification/".format(
+            team, dataset)
         s3_output = "s3://{}/{}".format(bucket, output_key)
-        
+
         kms_key = KMSConfiguration(team).get_kms_arn
         name = "MedicalResearchTopicClassifier"
         aws_account_id = context.invoked_function_arn.split(":")[4]
-        data_access_role = 'arn:aws:iam::{}:role/sdlf-{}-{}-create-classifier-b'.format(aws_account_id, team, pipeline)
+        data_access_role = 'arn:aws:iam::{}:role/sdlf-{}-{}-create-classifier-b'.format(
+            aws_account_id, team, pipeline)
 
         # Call Multi-Label Classifier Training to Start
         response = comprehend_client.create_document_classifier(

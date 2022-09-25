@@ -1,0 +1,46 @@
+---
+- name: get the list of stacks that should be deleted last
+  shell: |
+    aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE ROLLBACK_COMPLETE ROLLBACK_FAILED DELETE_FAILED --profile {{ aws_profile }} \
+    --query 'StackSummaries[?starts_with(StackName, `{{ proj_prefix }}`) == `true`]|[?ParentId==`null`].StackName' | jq .
+  register: shell_result
+  ignore_errors: yes
+
+- name: put the list in a variable
+  set_fact:
+    stack_list: "{{ shell_result.stdout }}"
+
+- name: "Disable termination protection"
+  cloudformation:
+    stack_name: "{{ stack_item }}"
+    state: present
+    termination_protection: no
+    profile: "{{ aws_profile }}"
+  loop: "{{ stack_list }}"
+  loop_control:
+    loop_var: "stack_item"
+  ignore_errors: yes
+
+- name: delete all stacks in parallel - part 2
+  cloudformation:
+    stack_name: "{{ async_item }}"
+    state: "absent"
+    profile: "{{ aws_profile }}"
+  async: 450
+  poll: 0
+  loop: "{{ stack_list }}"
+  loop_control:
+    loop_var: "async_item"
+  register: async_results
+  ignore_errors: yes
+
+- name: check sync status
+  async_status:
+    jid: "{{ async_result_item.ansible_job_id }}"
+  loop: "{{ async_results.results }}"
+  loop_control:
+    loop_var: "async_result_item"
+  register: async_poll_results
+  until: async_poll_results.finished
+  retries: 400
+  ignore_errors: yes

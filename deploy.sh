@@ -111,7 +111,7 @@ function bootstrap_repository()
     git init
     git add .
     git commit -m "Initial Commit"
-    git remote add origin https://git-codecommit.${REGION}.amazonaws.com/v1/repos/${REPOSITORY}
+    git remote add origin codecommit://${REPOSITORY}
     git push --set-upstream origin master
     git checkout -b test
     git push --set-upstream origin test
@@ -166,6 +166,7 @@ then
         --template-body file://${DIRNAME}/sdlf-cicd/template-cicd-team-repos.yaml \
         --tags Key=Framework,Value=sdlf \
         --capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+        --disable-rollback \
         --region ${REGION} \
         --profile ${DEVOPS_PROFILE}
     echo "Waiting for stack to be created ..."

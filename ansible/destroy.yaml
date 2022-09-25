@@ -1,0 +1,262 @@
+---
+#####################################################################################################
+# IMPORTANT:  before anything, please edit:
+#             ./environments/{{ deployment_env }}/vars-app.yaml and
+#             ./environments/vars_common.yaml
+#             and change variable specific to your environments
+#
+# ###################################################################################################
+#
+# Usage:
+#
+# ansible-playbook destroy.yaml -e "deployment_env=dev"
+# ansible-playbook destroy.yaml -e "deployment_env=prod"
+# ansible-playbook destroy.yaml -e "deployment_env=test"
+#####################################################################################################
+
+- hosts: localhost
+  remote_user: root
+
+  vars:
+
+    - deployment_env: dev # must be overwritten with an inline variable. eg: ... -e "deployment_env=prod"
+
+  tasks:
+
+    - name: load common variables, same in all environments
+      include_vars: "./environments/vars_common.yaml"
+
+    - name: load variables specific to this environment
+      include_vars: "./environments/{{ deployment_env }}/vars-app.yaml"
+
+    # ###############################################################################################################
+    # get the aws account id and principal
+
+    - name: get account id from aws cli caller identity
+      shell: "aws sts get-caller-identity --query Account --output text --profile {{ aws_profile }}"
+      register: shell_response
+
+    - name: set aws_account variable
+      set_fact:
+        aws_account: "{{ shell_response.stdout }}"
+
+    - name: show aws_account variable
+      debug:
+        msg: "{{ aws_account }}"
+
+    - name: get the arn (principal) for current user
+      shell: "aws sts get-caller-identity --query Arn --output text --profile {{ aws_profile }}"
+      register: shell_response
+
+    - name: set aws_principal variable
+      set_fact:
+        aws_principal: "{{ shell_response.stdout }}"
+
+    - name: show aws_principal variable
+      debug:
+        msg: "{{ aws_principal }}"
+
+    # ###############################################################################################################
+
+    - name: get the list of glue databases
+      shell: |
+        aws glue get-databases --profile {{ aws_profile }} --query 'DatabaseList[?starts_with(Name, `{{ proj_company }}`)==`true`].Name' | jq .
+      register: shell_result
+      ignore_errors: yes
+
+    - name: put the list in a variable
+      set_fact:
+        db_list: '{{ shell_result.stdout }}'
+
+    - name: assign drop permissions for current principal to this proj glue dbs
+      shell: |
+        aws lakeformation grant-permissions --profile {{ aws_profile }} --principal DataLakePrincipalIdentifier={{ aws_principal }} --permissions DROP --resource $(echo \'{\"Database\":{\"Name\":\"{{ item }}\"}}\' | tr -d \')
+      loop: '{{ db_list }}'
+      register: shell_result
+      ignore_errors: yes
+
+    # ###############################################################################################################
+
+    - name: empty s3 buckets
+      ansible.builtin.include_tasks: 'tasks-empty-s3.yaml'
+
+    # ################################################################################################################
+
+    - name: include task list for deleting stacks
+      ansible.builtin.include_tasks: 'tasks-delete-stacks-01.yaml'
+      loop:
+        - "one"
+        - "two"
+
+    # ###################################################################################################
+
+    - name: empty remaining s3 buckets
+      ansible.builtin.include_tasks: 'tasks-empty-s3.yaml'
+
+    # ###################################################################################################
+
+    - name: include task list for deleting stacks remaining
+      ansible.builtin.include_tasks: 'tasks-delete-stacks-02.yaml'
+      loop:
+        - 'one'
+        - 'two'
+
+    # ##################################################################################################
+
+    - name: remove s3 buckets by force if they still exists
+      amazon.aws.s3_bucket:
+        name: "{{ item }}"
+        state: absent
+        force: yes
+        profile: '{{ aws_profile }}'
+      async: 450
+      poll: 0
+      loop: '{{ bucket_list }}'
+      ignore_errors: yes
+
+    # ##################################################################################################
+
+    - name: list all repositories of this project
+      shell: |
+        aws codecommit list-repositories --query 'repositories[?starts_with(repositoryName, `{{ proj_prefix }}`)==`true`].repositoryName' --profile {{ aws_profile }}| jq .
+      register: shell_result
+
+    - name: put the list in a variable
+      set_fact:
+            repo_list: '{{ shell_result.stdout }}'
+
+    - name: remove codecommit repositories
+      community.aws.aws_codecommit:
+        name: "{{ async_item }}"
+        state: absent
+        profile: '{{ aws_profile }}'
+      loop: '{{ repo_list }}'
+      loop_control:
+        loop_var: "async_item"
+      ignore_errors: yes
+
+    # ##################################################################################################
+
+    - name: remove status files 1
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: absent
+      loop:
+        - '{{ playbook_dir }}/environments/{{ deployment_env }}/z-foundations-repo-installed'
+        - '{{ playbook_dir }}/environments/{{ deployment_env }}/z-foundations-installed'
+        - '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-team-installed'
+        - '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-pipeline-installed'
+        - '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-dataset-installed'
+        - '{{ playbook_dir }}/environments/{{ deployment_env }}/z-team-{{ default_team }}-legislators-installed'
+
+    # ################################################################################################################
+
+    - name: remove .git
+      ansible.builtin.shell:
+        chdir: '{{ playbook_dir }}/../{{ proj_prefix }}-{{ item }}'
+        cmd: 'rm -rf .git'
+      loop:
+        - "datalakeLibrary"
+        - "dataset"
+        - "foundations"
+        - "pipeline"
+        - "pipLibrary"
+        - "stageA"
+        - "stageB"
+        - "team"
+        - "utils"
+      register: shell_result
+      ignore_errors: yes
+
+    # ##################################################################################################
+
+    - name: delete default team repositories
+      file:
+        state: absent
+        path: "{{ item }}"
+      loop:
+        - "{{ playbook_dir }}/../{{ proj_prefix }}-{{ default_team }}-datalakeLibrary"
+        - "{{ playbook_dir }}/../{{ proj_prefix }}-{{ default_team }}-dataset"
+        - "{{ playbook_dir }}/../{{ proj_prefix }}-{{ default_team }}-pipeline"
+        - "{{ playbook_dir }}/../{{ proj_prefix }}-{{ default_team }}-pipLibrary"
+        - "{{ playbook_dir }}/../{{ proj_prefix }}-{{ default_team }}-stageA"
+        - "{{ playbook_dir }}/../{{ proj_prefix }}-{{ default_team }}-stageB"
+      ignore_errors: yes
+
+    # ###############################################################################################################
+
+    - name: get the list cloudtrails groups
+      shell: |
+        aws cloudtrail list-trails --profile {{ aws_profile }} --query 'Trails[?starts_with(Name, `{{ proj_prefix }}`)==`true`].Name' | jq .
+      register: shell_result
+      ignore_errors: yes
+
+    - name: put the list in a variable
+      set_fact:
+        trail_list: '{{ shell_result.stdout }}'
+
+    - name: delete cloud trails groups
+      shell: |
+        aws cloudtrail delete-trail --profile {{ aws_profile }} --name {{ item }}
+      loop: '{{ trail_list }}'
+      register: shell_result
+      ignore_errors: yes
+
+    # ###############################################################################################################
+
+    - name: destroy lambda layers
+      shell: |
+        for LAYER in $(aws lambda list-layers --profile {{ aws_profile }} --query 'Layers[?starts_with(LayerName, `{{ proj_prefix }}`)==`true` || starts_with(LayerName, `sdlf`)==`true`]' | jq -r '.[].LayerName')
+        do
+            for VERSION in $(aws lambda list-layer-versions --profile {{ aws_profile }} --layer-name $LAYER | jq '.[][].Version')
+            do
+                aws lambda delete-layer-version --profile {{ aws_profile }} --layer-name $LAYER --version-number $VERSION
+            done
+        done
+      register: shell_result
+      ignore_errors: yes
+
+    - name: show lambda layers deletion result
+      debug:
+        msg: "{{ shell_result }}"
+
+    # ###############################################################################################################
+
+    - name: schedule sdlf kms key to be deleted in 7 days
+      shell: |
+        for KEY in $(aws kms list-keys --profile {{ aws_profile }} | jq -r '.[][].KeyId')
+            do
+                for TAGVALUE in $(aws kms list-resource-tags --key-id $KEY --profile {{ aws_profile }}| jq -r '.Tags[].TagValue')
+                do
+                    case "$TAGVALUE" in
+                      *sdlf*) echo "Scheduling SDLF key:" $KEY "for deletion" && aws kms schedule-key-deletion --profile {{ aws_profile }} --key-id $KEY --pending-window-in-days 7 &>/dev/null ;;
+                      *) echo " " ;;
+                    esac
+                done
+            done
+      register: shell_result
+      ignore_errors: yes
+
+    - name: show kms keys deletion result
+      debug:
+        msg: "{{ shell_result }}"
+
+    # ###############################################################################################################
+
+    - name: delete SSM parameters
+      shell: |
+        for PARAM in $(aws ssm describe-parameters --profile {{ aws_profile }}| jq -r '.[][].Name')
+        do
+            case "$PARAM" in
+                \/SDLF*) aws ssm delete-parameter --name $PARAM --profile {{ aws_profile }}&& sleep 1 ;;
+                *) echo "Skipping non-SDLF parameter" ;;
+            esac
+        done
+      register: shell_result
+      ignore_errors: yes
+
+    - name: show SSM parameters deletion result
+      debug:
+        msg: "{{ shell_result }}"
+
+

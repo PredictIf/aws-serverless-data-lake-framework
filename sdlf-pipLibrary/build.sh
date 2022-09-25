@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 team_name=$1
 
@@ -21,7 +21,7 @@ do
         zip -r layer.zip python/ -x \*__pycache__\*
         dir_name=$(echo "${dir//.\/}")
         echo "Uploading Lambda Layer as sdlf-$team_name-$dir_name..."
-        
+
         set +e
         layer=$(aws lambda publish-layer-version --layer-name sdlf-$team_name-$dir_name --description "Contains the libraries specified in requirements.txt" --compatible-runtimes "python3.7" "python3.8" "python3.9" --zip-file fileb://./layer.zip)
         status=$?
@@ -30,7 +30,7 @@ do
         if [ $status -ne 0 ] ; then
             exit $status
         fi
-        
+
         latest_layer_version=$(echo $layer | jq -r .LayerVersionArn)
         paramname=$(printf '/SDLF/Lambda/%s/%s' $team_name $dir_name)
         aws ssm put-parameter --name $paramname --value $latest_layer_version --type String --overwrite
@@ -42,13 +42,13 @@ do
             echo "external_layers.json exists"
             python3 ../external_layers.py $artifacts_bucket $team_name
         fi
-        
+
         if [ -f "./external_wheels.json" ]; then
             echo "external_wheels.json exists"
             python3 ../external_wheels.py $artifacts_bucket $team_name
         fi
-        cd ../   
-            
+        cd ../
+
     fi
 
     echo "============= COMPLETED DIRECTORY BUILD ============="

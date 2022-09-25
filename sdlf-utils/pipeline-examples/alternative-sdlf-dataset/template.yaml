@@ -59,7 +59,7 @@ Parameters:
     Default: "ENABLED"
 
 Conditions:
-  CreateDatabase: !Equals [ !Ref pCreateDatabase, "True" ]
+  CreateDatabase: !Equals [!Ref pCreateDatabase, "True"]
 
 Resources:
   ######## SQS #########

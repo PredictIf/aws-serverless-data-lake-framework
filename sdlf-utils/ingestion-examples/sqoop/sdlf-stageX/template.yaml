@@ -34,7 +34,7 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /SDLF/S3/AnalyticsBucket
   pDatasetBucket:
-    Description:  Name of the raw data bucket
+    Description: Name of the raw data bucket
     Type: String
   pStageBucket:
     Description: Name of the stage bucket
@@ -130,7 +130,6 @@ Conditions:
   EnableTracing: !Equals [!Ref pEnableTracing, "true"]
 
 Resources:
-
   rDeadLetterQueueRoutingStep:
     Type: AWS::SQS::Queue
     Properties:
@@ -186,11 +185,11 @@ Resources:
       Role: !GetAtt rRoleLmbCreateEvents.Arn
       Environment:
         Variables:
-         #quitar esto
+          #quitar esto
           DYNAMO_SCHEDULE_TABLE: !Ref rDynamoSqoopStepFunctionsSchedules
           CLOUDWATCH_TARGET: !GetAtt rLambdaRouting.Arn
 
-#IAM
+  #IAM
 
   rRoleSqoopEMRcluster:
     Type: AWS::IAM::Role
@@ -203,44 +202,44 @@ Resources:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - elasticmapreduce.amazonaws.com
-            - application-autoscaling.amazonaws.com
-          Action:
-          - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - elasticmapreduce.amazonaws.com
+                - application-autoscaling.amazonaws.com
+            Action:
+              - sts:AssumeRole
       Path: /
       Policies:
-      - PolicyName: !Sub sdlf-${pTeamName}-${pPipeline}-sqoop-emr-x
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Effect: Allow
-            Action:
-            - athena:List*
-            - athena:Get*
-            - athena:Batch*
-            - athena:*Tag*
-            - athena:Start*
-            - athena:Stop*
-            - athena:CreatePreparedStatement
-            - athena:StartQueryExecution
-            - athena:CreateNamedQuery
-            - athena:UpdatePreparedStatement
-            - athena:StopQueryExecution
-            - athena:DeleteNamedQuery
-            - athena:DeletePreparedStatement
-            Resource: !Sub arn:aws:athena:*:${AWS::AccountId}:*
-          - Effect: Allow
-            Action:
-            - kms:Decrypt
-            - kms:Encrypt
-            - kms:ReEncrypt*
-            - kms:GenerateDataKey
-            - kms:DescribeKey
-            - kms:CreateGrant
-            Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*
+        - PolicyName: !Sub sdlf-${pTeamName}-${pPipeline}-sqoop-emr-x
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - athena:List*
+                  - athena:Get*
+                  - athena:Batch*
+                  - athena:*Tag*
+                  - athena:Start*
+                  - athena:Stop*
+                  - athena:CreatePreparedStatement
+                  - athena:StartQueryExecution
+                  - athena:CreateNamedQuery
+                  - athena:UpdatePreparedStatement
+                  - athena:StopQueryExecution
+                  - athena:DeleteNamedQuery
+                  - athena:DeletePreparedStatement
+                Resource: !Sub arn:aws:athena:*:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:Encrypt
+                  - kms:ReEncrypt*
+                  - kms:GenerateDataKey
+                  - kms:DescribeKey
+                  - kms:CreateGrant
+                Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*
 
   rRoleSqoopEMREC2:
     Type: AWS::IAM::Role
@@ -254,61 +253,61 @@ Resources:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
-          Action:
-          - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
       Path: /
       Policies:
-      - PolicyName: !Sub sdlf-${pTeamName}-${pPipeline}-emr-ec2-x
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Effect: Allow
-            Action:
-            - elasticmapreduce:TerminateJobFlows
-            - elasticmapreduce:ModifyCluster
-            Resource: !Sub arn:aws:elasticmapreduce:${AWS::Region}:${AWS::AccountId}:cluster/*
-          - Effect: Allow
-            Action:
-            - ssm:GetParameter
-            Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
-          - Effect: Allow
-            Action:
-            - athena:List*
-            - athena:Get*
-            - athena:Batch*
-            - athena:*Tag*
-            - athena:Start*
-            - athena:Stop*
-            - athena:CreatePreparedStatement
-            - athena:StartQueryExecution
-            - athena:CreateNamedQuery
-            - athena:UpdatePreparedStatement
-            - athena:StopQueryExecution
-            - athena:DeleteNamedQuery
-            - athena:DeletePreparedStatement
-            Resource: !Sub arn:aws:athena:*:${AWS::AccountId}:*
-          - Effect: Allow
-            Action:
-            - secretsmanager:GetSecretValue
-            Resource:
-            - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/SDLF/credentials/*
-            - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:sdlf/sqoop/*
-            - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:SDLF/SQOOP/*
-          - Effect: Allow
-            Action:
-            - secretsmanager:ListSecrets
-            Resource: '*'
-          - Effect: Allow
-            Action:
-            - kms:Decrypt
-            - kms:Encrypt
-            - kms:ReEncrypt*
-            - kms:GenerateDataKey
-            Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*
+        - PolicyName: !Sub sdlf-${pTeamName}-${pPipeline}-emr-ec2-x
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticmapreduce:TerminateJobFlows
+                  - elasticmapreduce:ModifyCluster
+                Resource: !Sub arn:aws:elasticmapreduce:${AWS::Region}:${AWS::AccountId}:cluster/*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+              - Effect: Allow
+                Action:
+                  - athena:List*
+                  - athena:Get*
+                  - athena:Batch*
+                  - athena:*Tag*
+                  - athena:Start*
+                  - athena:Stop*
+                  - athena:CreatePreparedStatement
+                  - athena:StartQueryExecution
+                  - athena:CreateNamedQuery
+                  - athena:UpdatePreparedStatement
+                  - athena:StopQueryExecution
+                  - athena:DeleteNamedQuery
+                  - athena:DeletePreparedStatement
+                Resource: !Sub arn:aws:athena:*:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/SDLF/credentials/*
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:sdlf/sqoop/*
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:SDLF/SQOOP/*
+              - Effect: Allow
+                Action:
+                  - secretsmanager:ListSecrets
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:Encrypt
+                  - kms:ReEncrypt*
+                  - kms:GenerateDataKey
+                Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*
 
   rEmrInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -549,75 +548,75 @@ Resources:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
       Path: /
       Policies:
-      - PolicyName: !Sub sdlf-${pTeamName}-${pPipeline}-sqoop-interact-x
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Effect: Allow
-            Action:
-              - lambda:InvokeFunction
-            Resource: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/*
-          - Effect: Allow
-            Action:
-              - states:StartExecution
-            Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:sdlf-${pTeamName}-${pPipeline}*
-          - Effect: Allow
-            Action:
-            - elasticmapreduce:*
-            Resource: '*'
-          - Effect: Allow
-            Action:
-            - s3:GetObject*
-            - s3:PutObject*
-            Resource: arn:aws:s3:::*/*
-          - Effect: Allow
-            Action:
-            - s3:ListBucket
-            Resource: arn:aws:s3:::*
-          - Effect: Allow
-            Action:
-              - events:PutTargets
-              - lambda:AddPermission
-              - events:PutRule
-              - lambda:RemovePermission
-              - lambda:InvokeFunction
-              - dynamodb:Scan
-              - events:DeleteRule
-              - events:RemoveTargets
-              - events:ListTargetsByRule
-              - ssm:GetParameter
-            Resource: '*'
-          - Effect: Allow
-            Action:
-            - iam:Passrole
-            Resource:
-            - !GetAtt rRoleSqoopEMRcluster.Arn
-            - !GetAtt rRoleSqoopEMREC2.Arn
-          - Effect: Allow
-            Action:
-            - secretsmanager:GetSecretValue
-            Resource:
-            - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:SDLF/SQOOP/*
-            - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:sdlf/sqoop/*
-          - Effect: Allow
-            Action:
-            - kms:CreateGrant
-            - kms:Decrypt
-            - kms:DescribeKey
-            - kms:Encrypt
-            - kms:GenerateDataKey*
-            - kms:ReEncrypt*
-            Resource:
-            - !Ref pKMSDataKeyId
-            - !Ref pKMSInfraKeyId
+        - PolicyName: !Sub sdlf-${pTeamName}-${pPipeline}-sqoop-interact-x
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/*
+              - Effect: Allow
+                Action:
+                  - states:StartExecution
+                Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:sdlf-${pTeamName}-${pPipeline}*
+              - Effect: Allow
+                Action:
+                  - elasticmapreduce:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject*
+                  - s3:PutObject*
+                Resource: arn:aws:s3:::*/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: arn:aws:s3:::*
+              - Effect: Allow
+                Action:
+                  - events:PutTargets
+                  - lambda:AddPermission
+                  - events:PutRule
+                  - lambda:RemovePermission
+                  - lambda:InvokeFunction
+                  - dynamodb:Scan
+                  - events:DeleteRule
+                  - events:RemoveTargets
+                  - events:ListTargetsByRule
+                  - ssm:GetParameter
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - iam:Passrole
+                Resource:
+                  - !GetAtt rRoleSqoopEMRcluster.Arn
+                  - !GetAtt rRoleSqoopEMREC2.Arn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:SDLF/SQOOP/*
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:sdlf/sqoop/*
+              - Effect: Allow
+                Action:
+                  - kms:CreateGrant
+                  - kms:Decrypt
+                  - kms:DescribeKey
+                  - kms:Encrypt
+                  - kms:GenerateDataKey*
+                  - kms:ReEncrypt*
+                Resource:
+                  - !Ref pKMSDataKeyId
+                  - !Ref pKMSInfraKeyId
 
   rRoleLambdaCheckClusters:
     Type: AWS::IAM::Role
@@ -645,7 +644,7 @@ Resources:
                 Action:
                   - elasticmapreduce:ListClusters
                   - elasticmapreduce:DescribeStep
-                Resource: '*'
+                Resource: "*"
 
   rStateMachine:
     Type: AWS::Serverless::StateMachine

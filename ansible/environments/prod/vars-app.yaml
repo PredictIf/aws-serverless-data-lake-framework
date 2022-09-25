@@ -1,0 +1,5 @@
+---
+aws_profile: predictif-prod
+aws_profile_devops: predictif
+aws_region: us-west-2
+deployment_env: prod

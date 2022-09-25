@@ -1,0 +1,10 @@
+---
+proj_prefix: sdlf
+proj_company: forecourt
+proj_appname: datalake
+proj_notifemail: marian.dumitrascu@predictifsolutions.com
+proj_environment_list:
+  - dev
+  - prod
+  - test
+default_team: engineering

@@ -45,7 +45,7 @@ function bootstrap_repository_scm()
     $SED -i "s/<REPOSITORY>/${REPOSITORY}/g" ${SCM_DIR}/azure-pipelines.yml
     $SED -i "s/REGION/${REGION}/g" ${SCM_DIR}/azure-pipelines.yml
     $SED -i "s/SERVICE_CONNECTION/${SERVICE_CONNECTION}/g" ${SCM_DIR}/azure-pipelines.yml
-    
+
     cp -f ${SCM_DIR}/azure-pipelines.yml ${DIRNAME}/${REPOSITORY}/azure-pipelines.yml
     cd ${DIRNAME}/${REPOSITORY}/
     /bin/test -d .git && rm -rf .git
@@ -53,7 +53,7 @@ function bootstrap_repository_scm()
     if [[ "${REPOSITORY}" == "sdlf-team" ]]; then #remove sdlf-team repositories creation
       $SED -i 's/bootstrap_team_repository ${TEAM_NAME} ${REPOSITORY}/echo "Creation delegated to external SCM"/g' scripts/bootstrap_team.sh
     fi
-    git add . 
+    git add .
     git commit -m "Initial Commit" > /dev/null
     # Azure mods
     echo "Creating repository ${PREFIX}-${REPOSITORY} on Azure DevOps"
@@ -109,7 +109,7 @@ function setup_azure_pipelines() {
       az pipelines variable update --pipeline-name ${PREFIX}-${REPOSITORY} \
           --name sdlf-team-firstTime --value "0" > /dev/null
     fi
-} 
+}
 
 function setup_azure_config() {
     echo "Setting up Azure config"

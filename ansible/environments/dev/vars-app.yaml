@@ -1,0 +1,6 @@
+---
+aws_profile: default
+aws_profile_devops: default
+aws_region: us-west-1
+deployment_env: dev
+

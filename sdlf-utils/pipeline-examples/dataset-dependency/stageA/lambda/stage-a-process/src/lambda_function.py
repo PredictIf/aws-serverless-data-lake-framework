@@ -54,11 +54,20 @@ def lambda_handler(event, context):
             bucket, None, team, dataset)  # custom user code called
         remove_content_tmp()
         octagon_client.update_pipeline_execution(status="{} {} Processing".format(stage, component),
-                                                 component=component)
+            component=component)
     except Exception as e:
         logger.error("Fatal error", exc_info=True)
+        
+        octagon_client = (
+            octagon.OctagonClient()
+            .with_run_lambda(True)
+            .with_configuration_instance(event['body']['env'])
+            .build()
+        )
+
         octagon_client.end_pipeline_execution_failed(component=component,
-                                                     issue_comment="{} {} Error: {}".format(stage, component, repr(e)))
+            issue_comment="{} {} Error: {}".format(stage, component, repr(e)))
+
         remove_content_tmp()
         raise e
     return response

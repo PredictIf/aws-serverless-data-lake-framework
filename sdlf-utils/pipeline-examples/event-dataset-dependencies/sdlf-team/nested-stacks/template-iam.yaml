@@ -237,7 +237,7 @@ Resources:
             Action:
               - elasticmapreduce:*
               - iam:PassRole
-            Resource: '*'
+            Resource: "*"
           - Sid: AllowEvents
             Effect: Allow
             Action:

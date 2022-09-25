@@ -80,7 +80,6 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /SDLF/KMS/KeyArn
 
-
 Resources:
   ServiceLogGroup:
     Type: AWS::Logs::LogGroup

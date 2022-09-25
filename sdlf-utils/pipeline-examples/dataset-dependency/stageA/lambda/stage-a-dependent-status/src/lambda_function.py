@@ -69,6 +69,7 @@ def lambda_handler(event, context):
 
         logger.info('Initializing Octagon client')
         component = context.function_name.split('-')[-2].title()
+        
         octagon_client = (
             octagon.OctagonClient()
             .with_run_lambda(True)
@@ -78,7 +79,7 @@ def lambda_handler(event, context):
         if 'peh_id' not in event['body']:
             peh_id = octagon_client.start_pipeline_execution(
                 pipeline_name='{}-{}-stage-{}'.format(team,
-                                                      pipeline, stage[-1].lower()),
+                    pipeline, stage[-1].lower()),
                 dataset_name='{}-{}'.format(team, dataset),
                 comment=event
             )
@@ -109,7 +110,7 @@ def lambda_handler(event, context):
     except Exception as e:
         logger.error("Fatal error", exc_info=True)
         octagon_client.end_pipeline_execution_failed(component=component,
-                                                     issue_comment="{} {} Error: {}".format(stage, component, repr(e)))
+            issue_comment="{} {} Error: {}".format(stage, component, repr(e)))
         raise e
     return {
         "body": {

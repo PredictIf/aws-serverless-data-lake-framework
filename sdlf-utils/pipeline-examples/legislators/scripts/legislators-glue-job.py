@@ -55,15 +55,18 @@ organizations = glueContext.create_dynamic_frame.from_options(
 ).rename_field('id', 'org_id').rename_field('name', 'org_name')
 
 history = Join.apply(organizations,
-                     Join.apply(persons, memberships, 'id', 'person_id'),
-                     'org_id', 'organization_id').drop_fields(['person_id', 'org_id'])
+                    Join.apply(persons, memberships, 'id', 'person_id'),
+                    'org_id', 'organization_id').drop_fields(['person_id', 'org_id'])
 
 persons.toDF().write.mode("overwrite").parquet(
     '{}/persons/'.format(destination))
+
 organizations.toDF().write.mode("overwrite").parquet(
     '{}/organizations/'.format(destination))
+
 memberships.toDF().write.mode("overwrite").parquet(
     '{}//memberships/'.format(destination))
+
 history.toDF().write.mode("overwrite").parquet(
     '{}/history/'.format(destination), partitionBy=['org_name'])
 

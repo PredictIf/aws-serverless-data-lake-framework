@@ -57,7 +57,7 @@ Resources:
         maxReceiveCount: 1
       VisibilityTimeout: 60
       KmsMasterKeyId: !Sub "{{resolve:ssm:/SDLF/KMS/${pTeamName}/InfraKeyId:1}}"
-      
+
   rQueueRoutingPostStep1:
     Type: AWS::SQS::Queue
     Properties:
@@ -151,7 +151,7 @@ Resources:
       Type: String
       Value: !GetAtt rQueueRoutingPostStep.QueueName
       Description: !Sub "Name of the StageB ${pTeamName} ${pDatasetName} Queue"
-      
+
   rQueueRoutingPostStepLOWSsm:
     Type: AWS::SSM::Parameter
     Properties:

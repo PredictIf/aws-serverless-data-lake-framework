@@ -503,7 +503,6 @@ Resources:
       Timeout: 600
       Role: !GetAtt rRoleLambdaExecutionStep4.Arn
 
-
   rLambdaStep5:
     Type: AWS::Serverless::Function
     Properties:

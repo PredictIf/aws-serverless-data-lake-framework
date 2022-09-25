@@ -65,13 +65,14 @@ class CustomTransform():
         output_path = "{}_parsed.json".format(local_path.split('.')[0])
         with open(output_path, "w", encoding='utf-8') as write_file:
             json.dump(parse(json_data), write_file,
-                      ensure_ascii=False, indent=4)
+                    ensure_ascii=False, indent=4)
 
         # Uploading file to Stage bucket at appropriate path
         # IMPORTANT: Build the output s3_path without the s3://stage-bucket/
         table = key.split("/")[2]
         s3_path = 'pre-stage/{}/{}/{}/{}'.format(team,
-                                              dataset,table, output_path.split('/')[2]) #wlm
+                dataset,table, output_path.split('/')[2]) #wlm
+
         # IMPORTANT: Notice "stage_bucket" not "bucket"
         kms_key = KMSConfiguration(team).get_kms_arn
         s3_interface.upload_object(

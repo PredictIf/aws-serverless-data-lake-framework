@@ -434,7 +434,6 @@ Resources:
                 Resource:
                   - "*"
 
-
   # Error Handling Lambda Role
   rRoleLambdaExecutionErrorStep:
     Type: AWS::IAM::Role

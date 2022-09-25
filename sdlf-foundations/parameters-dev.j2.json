@@ -1,0 +1,18 @@
+[
+    {
+        "ParameterKey": "pOrganizationName",
+        "ParameterValue": "{{ proj_company }}"
+    },
+    {
+        "ParameterKey": "pApplicationName",
+        "ParameterValue": "{{ proj_appname }}"
+    },
+    {
+        "ParameterKey": "pNumBuckets",
+        "ParameterValue": "3"
+    },
+    {
+        "ParameterKey": "pSNSNotificationsEmail",
+        "ParameterValue": "{{ proj_notifemail }}"
+    }
+]

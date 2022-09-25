@@ -1,0 +1,18 @@
+
+    - name: get the list of buckets that should be emptied
+      shell: |
+        aws s3api list-buckets --profile {{ aws_profile }} --query 'Buckets[?starts_with(Name, `{{ proj_prefix }}`)==`true` || starts_with(Name, `{{ proj_company }}`)==`true`].Name' | jq .
+      register: shell_result
+      ignore_errors: yes
+
+    - name: put the list in a variable
+      set_fact:
+        bucket_list: '{{ shell_result.stdout }}'
+
+    - name: empty s3 buckets
+      shell: "aws s3 rm s3://{{ item }} --recursive --profile {{ aws_profile }}"
+      async: 450
+      poll: 0
+      loop: '{{ bucket_list }}'
+      register: shell_result
+      ignore_errors: yes
